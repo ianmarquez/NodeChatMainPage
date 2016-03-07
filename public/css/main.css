@@ -1,0 +1,12 @@
+.cmd{
+	background: black;
+	color: white;
+	font-family: Courier New,Courier,Lucida Sans Typewriter,Lucida Typewriter,monospace; 
+	overflow: auto; 
+}
+.own_message{
+	color:yellow;
+}
+.systemmessage {
+	color:#00FF00;
+}

@@ -1,0 +1,190 @@
+<!doctype HTML>
+<html lang="en">
+<head>
+	<% include ../partials/head %>
+</head>
+<body>
+
+	<header>
+		<% include ../partials/header %>
+	</header>
+
+	<main>
+		<div class="container">
+			<div class="toggle_messenger" id="toggle_messenger">
+	          <div id="userlist_header">
+	            <span id="messenger_toggle" class="glyphicon glyphicon-user col-md-1 pull-left"></span>
+	            <div class="col-md-10" id="toggle_userlist">Contacts</div>
+	            <span id="refresh_user_list" class="refresh_users glyphicon glyphicon-refresh col-md-1"></span>
+	          </div>
+	        </div>
+	        <div id="sidebar_chatbox" class="pull-right col-md-4">
+	          <div id="userlist_wrapper">
+	            <div id="userlist" class="hidden"></div>
+	            <textarea id="searchChatUser" placeholder="Search" class="col-md-12 hidden"></textarea>
+	          </div>
+	        </div>
+			<div class="row">
+				<div class="col-md-12">
+					<table id="student-list" class="table table-hover table-striped table-bordered">
+						<thead>
+							<th>Student ID</th>
+							<th>First Name</th>
+							<th>Last Name</th>
+							<th>Contact No</th>
+							<th>Email Address</th>
+							<th>Action</th>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+					<button type="button" class="btn btn-primary col-md-4 col-md-offset-4" data-toggle="modal" data-target="#addUser">
+					  	Add Student
+					</button>
+				</div>
+			</div>
+			<br/>
+			<div class="row">
+				<div class="col-md-12">
+					<button type="button" class="btn btn-primary col-md-4 col-md-offset-4" data-toggle="modal" data-target="#setChatInfo">
+					  	Set Chat Info
+					</button>
+				</div>
+			</div>			
+		</div>
+		
+	</main>
+	<% include ../partials/modals %>
+	<footer>
+		<section class="footerchat" style="background: black">
+		  <div id="chatTabs"> 
+		  </div>
+		  <audio id="notification" src="mp3/notification.mp3" preload="auto"></audio>
+		</section>
+		<% include ../partials/footer %>
+	</footer>
+
+	<script>
+		var students = (function(){
+			var loadtabledata = function(){
+				var tablecontent = '';
+				$.getJSON( '/student/getStudents', function(data) {
+					if(data.length == 0){
+						tablecontent += '<tr><td class="text-center" colspan="6">No Results Found</td></tr>'
+					}else{
+						$.each(data, function(i,item){
+				            tablecontent += '<tr id="' + item.studID + '">';
+				            tablecontent += '<td class="id">' + item.studID + '</td>';
+				            tablecontent += '<td class="firstname">' + item.firstName + '</td>';
+				            tablecontent += '<td class="lastname">' + item.lastName + '</td>';
+				            tablecontent += '<td class="contactno">' + item.contactNo + '</td>';
+				            tablecontent += '<td class="emailaddress">' + item.emailAddress + '</td>';
+				            tablecontent += '<td><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#editUser" onClick="students.editStudentsModal($(this).closest(\'tr\'))">Edit</button> <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteUser" onClick="students.deleteStudentsModal($(this).closest(\'tr\'))">Delete</button></td>'
+				            tablecontent += '</tr>';
+				        });
+					}
+					$('#student-list tbody').html(tablecontent);
+				});
+			}
+			var clearInputs = function(){
+				$('#firstname').val('');
+				$('#lastname').val('');
+				$('#contactno').val('');
+				$('#email').val('');
+			}
+			var editStudentsModal = function(row){
+				var id = row.find(".id").text();
+				var firstname = row.find(".firstname").text(); 
+				var lastname = row.find(".lastname").text(); 
+				var contactno = row.find(".contactno").text(); 
+				var emailaddress = row.find(".emailaddress").text(); 
+
+				$('#edit-id').val(id);
+				$('#edit-firstname').val(firstname);
+				$('#edit-lastname').val(lastname);
+				$('#edit-contactno').val(contactno);
+				$('#edit-email').val(emailaddress);
+			}
+
+			var editStudents = function(){
+				var id = $('#edit-id').val();
+				var firstname = $('#edit-firstname').val();
+				var lastname = $('#edit-lastname').val();
+				var contactno = $('#edit-contactno').val();
+				var email = $('#edit-email').val();
+
+				var data = {"id" : id , "firstname" : firstname , "lastname" : lastname, "contactno" : contactno, "email" : email};
+				ajaxCall('/student/updateStudent', data, function(data){
+					if(data.code == 300){
+						loadtabledata();
+						$('#editUser').modal('toggle');
+						toastr.success('Student Successfully Updated');
+					}else{
+						toastr.error('An Error has Occured');
+					}
+				});
+			};
+
+			var deleteStudentsModal = function(row){
+				var id = row.find(".id").text();
+				$('#delete-id').val(id);
+			}
+
+			var deleteStudents = function(){
+				var id = $('#delete-id').val();
+				var data = {"id" : id};
+				ajaxCall('/student/deleteStudent', data, function(data){
+					if(data.code == 300){
+						loadtabledata();
+						$('#deleteUser').modal('toggle');
+						toastr.success('Student Successfully Deleted');
+					}else{
+						toastr.error('An Error has Occured');
+					}
+				});
+			};
+
+			var addStudents = function(){
+				var firstName = $('#firstname').val();
+				var lastName = $('#lastname').val();
+				var contactNo = $('#contactno').val();
+				var email = $('#email').val();
+
+				var data = {"firstname" : firstName , "lastname" : lastName, "contactno" : contactNo, "email" : email};
+				ajaxCall('/student/addStudent', data, function(data){
+					if(data.code == 300){
+						loadtabledata();
+						clearInputs();
+						$('#addUser').modal('toggle');
+						toastr.success('Student Successfully Added');
+					}else{
+						toastr.error('An Error has Occured');
+					}
+				});
+
+			};
+			document.getElementById('save-student').addEventListener('click',addStudents,false);
+			document.getElementById('update-student').addEventListener('click',editStudents,false);
+			document.getElementById('delete-student').addEventListener('click',deleteStudents,false);
+			window.onload = function() {
+				loadtabledata();
+			};
+
+			return {
+				editStudentsModal: editStudentsModal,
+				deleteStudentsModal: deleteStudentsModal
+			};
+		})(); 
+	</script>
+
+	<script>
+		var chat_config = {
+			doneTypingInterval: 800, //used to set how long typing prompt appears
+			socket:'http://210.8.0.80:3031', //used to set what chatserver to point
+			applicationkey: 'c4ca4238a0b923820dcc509a6f75849b' //request the application key to your manager
+		};
+	</script>
+	<script src="javascript/chat.js"></script>
+	
+</body>
+</html>
